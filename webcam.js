@@ -56,7 +56,6 @@ var Webcam = {
 		upload_name: 'webcam', // name of file in upload post data
 		constraints: null,     // custom user media constraints,
 		swfURL: '',            // URI to webcam.swf movie (defaults to the js location)
-		flashNotDetectedText: 'ERROR: No Adobe Flash Player detected.  Webcam.js relies on Flash for browsers that do not support getUserMedia (like yours).',
 		noInterfaceFoundText: 'No supported webcam interface found.',
 		unfreeze_snap: true    // Whether to unfreeze the camera after snap (defaults to true)
 	},
@@ -195,7 +194,7 @@ var Webcam = {
 			.catch( function(err) {
 				// JH 2016-07-31 Instead of dispatching error, now falling back to Flash if userMedia fails (thx @john2014)
 				// JH 2016-08-07 But only if flash is actually installed -- if not, dispatch error here and now.
-				if (self.params.enable_flash && self.detectFlash()) {
+				if (self.params.enable_flash) {
 					setTimeout( function() { self.params.force_flash = 1; self.attach(elem); }, 1 );
 				}
 				else {
@@ -203,7 +202,7 @@ var Webcam = {
 				}
 			});
 		}
-		else if (this.params.enable_flash && this.detectFlash()) {
+		else if (this.params.enable_flash) {
 			// flash fallback
 			window.Webcam = Webcam; // needed for flash-to-js interface
 			var div = document.createElement('div');
@@ -351,36 +350,6 @@ var Webcam = {
 		this.set('swfURL', value);
 	},
 	
-	detectFlash: function() {
-		// return true if browser supports flash, false otherwise
-		// Code snippet borrowed from: https://github.com/swfobject/swfobject
-		var SHOCKWAVE_FLASH = "Shockwave Flash",
-			SHOCKWAVE_FLASH_AX = "ShockwaveFlash.ShockwaveFlash",
-        	FLASH_MIME_TYPE = "application/x-shockwave-flash",
-        	win = window,
-        	nav = navigator,
-        	hasFlash = false;
-        
-        if (typeof nav.plugins !== "undefined" && typeof nav.plugins[SHOCKWAVE_FLASH] === "object") {
-        	var desc = nav.plugins[SHOCKWAVE_FLASH].description;
-        	if (desc && (typeof nav.mimeTypes !== "undefined" && nav.mimeTypes[FLASH_MIME_TYPE] && nav.mimeTypes[FLASH_MIME_TYPE].enabledPlugin)) {
-        		hasFlash = true;
-        	}
-        }
-        else if (typeof win.ActiveXObject !== "undefined") {
-        	try {
-        		var ax = new ActiveXObject(SHOCKWAVE_FLASH_AX);
-        		if (ax) {
-        			var ver = ax.GetVariable("$version");
-        			if (ver) hasFlash = true;
-        		}
-        	}
-        	catch (e) {;}
-        }
-        
-        return hasFlash;
-	},
-	
 	getSWFHTML: function() {
 		// Return HTML for embedding flash based webcam capture movie		
 		var html = '',
@@ -390,12 +359,6 @@ var Webcam = {
 		if (location.protocol.match(/file/)) {
 			this.dispatch('error', new FlashError("Flash does not work from local disk.  Please run from a web server."));
 			return '<h3 style="color:red">ERROR: the Webcam.js Flash fallback does not work from local disk.  Please run it from a web server.</h3>';
-		}
-		
-		// make sure we have flash
-		if (!this.detectFlash()) {
-			this.dispatch('error', new FlashError("Adobe Flash Player not found.  Please install from get.adobe.com/flashplayer and try again."));
-			return '<h3 style="color:red">' + this.params.flashNotDetectedText + '</h3>';
 		}
 		
 		// set default swfURL if not explicitly set
